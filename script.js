@@ -1,15 +1,30 @@
 // إعدادات عامة
-const MAX_KM = 1.0; // أقصى مسافة للفرع الأقرب
+const MAX_KM = 5.0; // أقصى مسافة للفرع الأقرب
 const BRANCHES_URL = "branches.json"; // ملف بيانات الفروع
 
-const elStatus = document.getElementById("status");
+// عناصر الواجهة
+const $welcome = document.getElementById("welcome");
+const $status  = document.getElementById("status");
+const $nearest = document.getElementById("nearest");
+const $noNear  = document.getElementById("noNear");
+const $btnLocate = document.getElementById("btnLocate");
+const $btnRequest = document.getElementById("btnRequest");
+const $nearestInfo = document.getElementById("nearestInfo");
+const $waFallback = document.getElementById("waFallback");
+const $waLink = document.getElementById("waLink");
 
-function setStatus(html, type){
-  elStatus.className = "card " + (type || "");
-  elStatus.innerHTML = html;
+let branches = [];
+let nearest = null;
+
+function show(el){
+  [$welcome,$status,$nearest,$noNear].forEach(e => e && (e.hidden = true));
+  el.hidden = false;
+}
+function setStatus(html, isError=false){
+  $status.className = "card" + (isError ? " error" : "");
+  $status.innerHTML = html;
 }
 
-// دالة هافرسين لحساب المسافة (كم)
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const toRad = d => (d * Math.PI) / 180;
@@ -19,83 +34,98 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-// احتفاظ بأي تتبّع حملات (src) ثم تمريره لواتساب
-function buildWhatsAppLink(base, defaultText){
+function qs(name) {
+  const p = new URLSearchParams(window.location.search);
+  return p.get(name);
+}
+
+function buildWhatsAppLink(base, text){
   try{
     const url = new URL(base);
     const params = new URLSearchParams(url.search);
-    const qp = new URLSearchParams(window.location.search);
-    if(!params.has("text")){
-      params.set("text", defaultText);
-    }
-    if(qp.has("src")){
-      params.set("src", qp.get("src"));
-    }
+    if(!params.has("text")) params.set("text", text);
+    const src = qs("src"); if(src) params.set("src", src);
     url.search = params.toString();
     return url.toString();
   }catch{
-    // base قد يكون بدون كويري
     const sep = base.includes("?") ? "&" : "?";
-    const qp = new URLSearchParams(window.location.search);
-    const parts = [`text=${encodeURIComponent(defaultText)}`];
-    if(qp.has("src")) parts.push(`src=${encodeURIComponent(qp.get("src"))}`);
+    const parts = [`text=${encodeURIComponent(text)}`];
+    const src = qs("src"); if(src) parts.push(`src=${encodeURIComponent(src)}`);
     return base + sep + parts.join("&");
   }
 }
 
-async function main(){
-  try{
-    setStatus('جارِ تحميل بيانات الفروع… <span class="loading"></span>');
-    const res = await fetch(BRANCHES_URL, { cache: "no-store" });
-    if(!res.ok) throw new Error("تعذر تحميل بيانات الفروع");
-    const branches = await res.json();
-
-    setStatus("جارِ تحديد موقعك… <span class=\"loading\"></span>");
-    if(!navigator.geolocation){
-      setStatus("المتصفح لا يدعم تحديد الموقع. من فضلك فعّل إذن الموقع أو استخدم جهاز آخر.", "error");
-      return;
-    }
-
-    navigator.geolocation.getCurrentPosition(async pos => {
-      const { latitude, longitude } = pos.coords;
-      const enriched = branches.map(b => ({...b, dist: haversine(latitude, longitude, b.lat, b.lon)}))
-                               .sort((a,b)=>a.dist-b.dist);
-
-      const nearest = enriched.find(b => b.dist <= MAX_KM);
-
-      if(nearest){
-        if(nearest.whatsapp){
-          const link = buildWhatsAppLink(nearest.whatsapp, "السلام عليكم، عايز أصرف وصفتي.");
-          setStatus(`أقرب فرع: <b>${nearest.branch}</b> — ${nearest.dist.toFixed(2)} كم. جارِ فتح واتساب الفرع…`);
-          window.location.href = link;
-        }else if(nearest.maps_url){
-          setStatus(`أقرب فرع: <b>${nearest.branch}</b> — ${nearest.dist.toFixed(2)} كم. لا يوجد رقم واتساب، سيتم فتح الموقع على الخريطة…`);
-          window.location.href = nearest.maps_url;
-        }else{
-          setStatus(`أقرب فرع: <b>${nearest.branch}</b> — ${nearest.dist.toFixed(2)} كم. لا توجد بيانات تواصل محفوظة لهذا الفرع.`, "error");
-        }
-      }else{
-        // لا يوجد فرع داخل 1 كم → أعرض أقرب 3
-        const top3 = enriched.slice(0,3);
-        const html = [
-          "<b>لا يوجد فرع في نطاق 1 كم.</b>",
-          "أقرب 3 فروع لك:",
-          "<ul class='list'>" + top3.map(b => {
-            const wa = b.whatsapp ? `<a class="btn" href="${buildWhatsAppLink(b.whatsapp, "السلام عليكم، عايز أصرف وصفتي.")}" target="_blank" rel="noopener">واتساب</a>` : "";
-            const map = b.maps_url ? `<a class="btn" href="${b.maps_url}" target="_blank" rel="noopener">الخريطة</a>` : "";
-            return `<li><b>${b.branch}</b> — ${b.dist.toFixed(2)} كم<br/>${wa} ${map}</li>`;
-          }).join("") + "</ul>"
-        ].join("<br/>");
-        setStatus(html);
-      }
-    }, err => {
-      setStatus("يجب السماح بالوصول للموقع لاستخدام الخدمة. افتح إعدادات المتصفح واسمح بالموقع ثم أعد تحميل الصفحة.", "error");
-    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
-
-  }catch(e){
-    console.error(e);
-    setStatus("حدث خطأ أثناء التحميل. جرّب إعادة تحميل الصفحة.", "error");
-  }
+async function ensureBranches(){
+  if(branches.length) return;
+  const res = await fetch(BRANCHES_URL, { cache: "no-store" });
+  if(!res.ok) throw new Error("تعذر تحميل بيانات الفروع");
+  branches = await res.json();
 }
 
-main();
+async function startLocate(){
+  show($status);
+  setStatus('جارِ تحميل بيانات الفروع…');
+  await ensureBranches();
+
+  setStatus('جارِ تحديد موقعك…');
+  if(!navigator.geolocation){
+    setStatus('المتصفح لا يدعم تحديد الموقع. من فضلك فعّل إذن الموقع أو استخدم جهاز آخر.', true);
+    return;
+  }
+
+  navigator.geolocation.getCurrentPosition(pos => {
+    const { latitude, longitude } = pos.coords;
+    const enriched = branches.map(b => ({...b, dist: haversine(latitude, longitude, b.lat, b.lon)}))
+                             .sort((a,b)=>a.dist-b.dist);
+    nearest = enriched.find(b => b.dist <= MAX_KM);
+    if(nearest){
+      $nearestInfo.innerHTML = `
+        <div><b>${nearest.branch}</b></div>
+        <div>المسافة: ${nearest.dist.toFixed(2)} كم</div>
+        ${nearest.address ? `<div class="muted">${nearest.address}</div>` : ""}
+      `;
+      show($nearest);
+    }else{
+      show($noNear);
+    }
+  }, err => {
+    setStatus('يجب السماح بالوصول للموقع لاستخدام الخدمة. افتح إعدادات المتصفح واسمح بالموقع ثم أعد التحميل.', true);
+  }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+}
+
+$btnLocate?.addEventListener("click", startLocate);
+
+$btnRequest?.addEventListener("click", () => {
+  if(!nearest){
+    setStatus("لم يتم تحديد فرع بعد.", true);
+    show($status);
+    return;
+  }
+  if(!nearest.whatsapp && nearest.maps_url){
+    window.open(nearest.maps_url, "_blank", "noopener");
+    $waLink.href = nearest.maps_url;
+    $waFallback.hidden = false;
+    return;
+  }
+  if(!nearest.whatsapp){
+    setStatus("لا تتوفر بيانات تواصل للفرع المحدد.", true);
+    show($status);
+    return;
+  }
+  const svc = document.querySelector('input[name="service"]:checked')?.value || "استلام من الفرع";
+  const txt = `السلام عليكم، عايز أصرف وصفتي.\\nالخدمة: ${svc}\\n(تم التحويل من صفحة وصفتي - صيدليات شمس)`;
+
+  const wa = buildWhatsAppLink(nearest.whatsapp, txt);
+  const win = window.open(wa, "_blank", "noopener");
+  $waLink.href = wa;
+  $waFallback.hidden = false;
+  if(!win){ /* المستخدم هيضغط الرابط يدوي */ }
+});
+
+if(qs("autostart") === "1"){
+  startLocate().catch(e => {
+    setStatus("خطأ غير متوقع. حاول مجددًا.", true);
+    show($status);
+    console.error(e);
+  });
+}
