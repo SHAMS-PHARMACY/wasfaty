@@ -4,28 +4,62 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>وصفتي | صيدليات شمس</title>
+  <meta name="description" content="حدد موقعك لاختيار أقرب فرع لصرف وصفتي عبر صيدليات شمس.">
   <link rel="stylesheet" href="style.css" />
-  <meta name="description" content="وصفتي المركزية من صيدليات شمس: تحديد أقرب فرع لك تلقائيًا وفتح واتساب الفرع لإتمام الطلب.">
 </head>
 <body>
   <main class="wrap">
-    <header class="header">
+    <!-- شاشة الترحيب -->
+    <section id="welcome" class="card center">
       <div class="brand">
         <div class="sun">☀️</div>
-        <div class="titles">
-          <h1>خدمة وصفتي المركزية</h1>
-          <p class="sub">صيدليات شمس</p>
+        <div>
+          <h1 class="title">Welcome at Shams Pharmacy</h1>
+          <p class="muted">من فضلك قم بتحديد موقعك لاختيار أقرب فرع</p>
         </div>
       </div>
-    </header>
 
-    <section class="notice success">
-      بدل ما تصرف وصفتي عادي… خلّيها تفيدك! 😉<br/>
-      مع صيدليات شمس هتكسب نقاط على صرف وصفاتك وتقدر تستبدلها لاحقًا 🎁
+      <div class="promo">
+        <div class="promo__title">اصرف وصفتك واحصل على نقاط تُستبدل لاحقًا 🎁</div>
+        <div class="promo__subtitle">ميزة الولاء الحصرية من صيدليات شمس</div>
+      </div>
+
+      <button id="btnLocate" class="btn btn-primary">تحديد موقعي الآن</button>
+
+      <div class="hint">بالضغط على الزر سيطلب المتصفح إذن الوصول للموقع.</div>
     </section>
 
-    <section id="status" class="card">
-      جارِ طلب إذن الموقع لتحديد أقرب فرع…
+    <!-- شاشة حالة التشغيل/الأخطاء -->
+    <section id="status" class="card" hidden></section>
+
+    <!-- شاشة نتيجة أقرب فرع + اختيار نوع الخدمة -->
+    <section id="nearest" class="card" hidden>
+      <h2 class="section-title">تم تحديد أقرب فرع</h2>
+      <div id="nearestInfo" class="nearest-info"></div>
+
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="service" value="استلام من الفرع" checked />
+          <span>استلام من الفرع</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="service" value="توصيل للمنزل" />
+          <span>توصيل للمنزل</span>
+        </label>
+      </div>
+
+      <button id="btnRequest" class="btn btn-success">عمل طلب</button>
+
+      <div id="waFallback" class="fallback" hidden>
+        تم فتح واتساب في نافذة جديدة. إن لم يُفتح تلقائيًا،
+        <a id="waLink" class="link">اضغط هنا لفتحه يدويًا</a>.
+      </div>
+    </section>
+
+    <!-- شاشة لا توجد فروع قريبة -->
+    <section id="noNear" class="card center" hidden>
+      <h2 class="section-title">نأسف، لا يوجد فروع قريبة من موقعكم</h2>
+      <p class="muted">جرّب تمكين الموقع أو استخدام موقع آخر.</p>
     </section>
 
     <footer class="footer">
