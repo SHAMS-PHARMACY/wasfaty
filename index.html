@@ -6,6 +6,20 @@
   <title>وصفتي | صيدليات شمس</title>
   <meta name="description" content="حدد موقعك لاختيار أقرب فرع لصرف وصفتي عبر صيدليات شمس.">
   <link rel="stylesheet" href="style.css" />
+  <style>
+    /* إضافات بسيطة للنموذج – تعتمد على نفس ألوانك */
+    .seg{display:flex;gap:10px;margin:14px 0 18px}
+    .seg button{flex:1;padding:14px;border-radius:14px;border:1px solid #cbd5e1;background:#e2e8f0;font-weight:800;cursor:pointer}
+    .seg button.active{background:var(--brand-blue);color:#fff;border-color:#1e40af;box-shadow:0 6px 14px rgba(37,99,235,.25)}
+    label{display:block;margin:12px 0 6px;font-weight:700}
+    input,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:12px;font-size:15px;outline:none}
+    input:focus,textarea:focus{border-color:var(--brand-blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+    textarea{min-height:84px}
+    .muted{color:var(--muted);font-size:13px}
+    .error{color:#dc2626;margin-top:8px;font-size:14px}
+    .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:9999}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  </style>
 </head>
 <body>
   <main class="wrap">
@@ -28,10 +42,10 @@
       <div class="hint">بالضغط على الزر سيطلب المتصفح إذن الوصول للموقع.</div>
     </section>
 
-    <!-- شاشة حالة التشغيل/الأخطاء -->
+    <!-- حالة التحميل/الأخطاء -->
     <section id="status" class="card" hidden></section>
 
-    <!-- شاشة نتيجة أقرب فرع + اختيار نوع الخدمة -->
+    <!-- أقرب فرع + اختيار الخدمة -->
     <section id="nearest" class="card" hidden>
       <h2 class="section-title">تم تحديد أقرب فرع</h2>
       <div id="nearestInfo" class="nearest-info"></div>
@@ -47,15 +61,69 @@
         </label>
       </div>
 
-      <button id="btnRequest" class="btn btn-success">عمل طلب</button>
+      <button id="btnContinue" class="btn btn-primary">متابعة</button>
 
-      <div id="waFallback" class="fallback" hidden>
+      <div id="waFallbackNear" class="fallback" hidden>
         تم فتح واتساب في نافذة جديدة. إن لم يُفتح تلقائيًا،
-        <a id="waLink" class="link">اضغط هنا لفتحه يدويًا</a>.
+        <a id="waLinkNear" class="link" target="_blank" rel="noopener">اضغط هنا لفتحه يدويًا</a>.
       </div>
     </section>
 
-    <!-- شاشة لا توجد فروع قريبة -->
+    <!-- نموذج البيانات (نسخة من فلو فرعك) -->
+    <section id="formCard" class="card" hidden>
+      <div class="promo" id="promoTop">
+        اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
+        <span class="small" style="display:block;opacity:.9;font-size:13px;margin-top:4px">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
+      </div>
+
+      <p class="muted">اختَر طريقة استلام وصفتك ثم أدخل البيانات المطلوبة.</p>
+
+      <div class="seg" id="modeSeg">
+        <button data-mode="pickup" class="active">🚶‍♂️ استلام من الفرع</button>
+        <button data-mode="delivery">🏠 توصيل للمنزل</button>
+      </div>
+
+      <div id="formView">
+        <label>رقم الهوية</label>
+        <input id="id_number" type="text" placeholder="1012345678" inputmode="numeric">
+
+        <label>رقم الوصفة</label>
+        <input id="rx_number" type="text" placeholder="A123456789">
+
+        <div id="deliveryBlock" style="display:none;">
+          <label>رقم الجوال</label>
+          <input id="mobile" type="tel" placeholder="05xxxxxxxx" inputmode="tel">
+
+          <label>📍 تحديد موقعي للتوصيل</label>
+          <button id="locBtn" class="btn btn-primary" style="margin-top:6px">📍 حدد موقعي الآن</button>
+          <div id="locStatus" class="muted" style="margin-top:6px"></div>
+
+          <label>وصف العنوان</label>
+          <textarea id="addr" placeholder="اسم الحي + أقرب معلم"></textarea>
+        </div>
+
+        <div style="margin-top:10px">
+          <input id="consent" type="checkbox"> أوافق على مشاركة بياناتي لغرض تجهيز الطلب
+        </div>
+
+        <button class="btn btn-success" id="sendBtn">إرسال الطلب الآن</button>
+        <div id="errorMsg" class="error"></div>
+      </div>
+
+      <div id="doneView" style="display:none;text-align:center;">
+        <div id="promoBanner" class="promo" style="display:block;">
+          اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
+          <span class="small">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
+        </div>
+
+        <h2 style="color:#16a34a">✅ تم تجهيز الطلب</h2>
+        <p>تم فتح واتساب لإرسال الرسالة.</p>
+        <a id="waLink" class="btn btn-primary" style="display:block;margin-bottom:12px" target="_blank" rel="noopener">🔗 تواصل عبر واتساب</a>
+        <button id="newReq" class="btn" style="background:#e5e7eb">طلب جديد</button>
+      </div>
+    </section>
+
+    <!-- لا توجد فروع قريبة -->
     <section id="noNear" class="card center" hidden>
       <h2 class="section-title">نأسف، لا يوجد فروع قريبة من موقعكم</h2>
       <p class="muted">جرّب تمكين الموقع أو استخدام موقع آخر.</p>
@@ -65,6 +133,9 @@
       <small>© جميع الحقوق محفوظة لصيدليات شمس</small>
     </footer>
   </main>
+
+  <div id="toast" class="toast">تم فتح واتساب لإرسال طلبك ✅</div>
+
   <script src="script.js"></script>
 </body>
 </html>
