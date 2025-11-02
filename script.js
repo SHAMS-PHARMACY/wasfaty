@@ -55,11 +55,22 @@ function buildWhatsAppLink(base, text){
   }
 }
 
+// كسر الكاش عند جلب بيانات الفروع
 async function ensureBranches(){
   if(branches.length) return;
-  const res = await fetch(BRANCHES_URL, { cache: "no-store" });
+  const bust = Date.now();
+  const res = await fetch(`${BRANCHES_URL}?v=${bust}`, { cache: "no-store" });
   if(!res.ok) throw new Error("تعذر تحميل بيانات الفروع");
   branches = await res.json();
+}
+
+// فحص حالة إذن الجيولوكيشن (لو مدعوم)
+async function checkPermission(){
+  if (!navigator.permissions || !navigator.permissions.query) return null;
+  try{
+    const st = await navigator.permissions.query({ name: "geolocation" });
+    return st.state; // 'granted' | 'prompt' | 'denied'
+  }catch{ return null; }
 }
 
 async function startLocate(){
@@ -67,30 +78,64 @@ async function startLocate(){
   setStatus('جارِ تحميل بيانات الفروع…');
   await ensureBranches();
 
+  // لو في mock=lat,lon للتجربة اليدوية
+  const mock = qs("mock");
+  if (mock) {
+    const [lat,lon] = mock.split(",").map(x => parseFloat(x));
+    if (!isNaN(lat) && !isNaN(lon)) {
+      return computeNearest(lat, lon);
+    }
+  }
+
   setStatus('جارِ تحديد موقعك…');
+
   if(!navigator.geolocation){
-    setStatus('المتصفح لا يدعم تحديد الموقع. من فضلك فعّل إذن الموقع أو استخدم جهاز آخر.', true);
+    setStatus('المتصفح لا يدعم تحديد الموقع. فعّل إذن الموقع أو استخدم جهاز آخر.', true);
+    return;
+  }
+
+  const perm = await checkPermission();
+  if (perm === "denied") {
+    setStatus(`
+      تم حظر إذن الموقع لهذا الموقع. <br>
+      افتح إعدادات المتصفح → الموقع (Location) → اسمح أثناء الاستخدام، ثم أعد تحميل الصفحة.
+      <br><br>
+      <button class="btn btn-primary" onclick="location.reload()">إعادة التحميل</button>
+    `, true);
     return;
   }
 
   navigator.geolocation.getCurrentPosition(pos => {
     const { latitude, longitude } = pos.coords;
-    const enriched = branches.map(b => ({...b, dist: haversine(latitude, longitude, b.lat, b.lon)}))
-                             .sort((a,b)=>a.dist-b.dist);
-    nearest = enriched.find(b => b.dist <= MAX_KM);
-    if(nearest){
-      $nearestInfo.innerHTML = `
-        <div><b>${nearest.branch}</b></div>
-        <div>المسافة: ${nearest.dist.toFixed(2)} كم</div>
-        ${nearest.address ? `<div class="muted">${nearest.address}</div>` : ""}
-      `;
-      show($nearest);
-    }else{
-      show($noNear);
-    }
+    computeNearest(latitude, longitude);
   }, err => {
-    setStatus('يجب السماح بالوصول للموقع لاستخدام الخدمة. افتح إعدادات المتصفح واسمح بالموقع ثم أعد التحميل.', true);
+    // رسائل تشخيص صديقة
+    let msg = 'تعذر تحديد الموقع.';
+    if (err && err.code === err.PERMISSION_DENIED) {
+      msg = 'لم يتم السماح بالوصول للموقع. اسمح بالموقع ثم أعد التحميل.';
+    } else if (err && err.code === err.POSITION_UNAVAILABLE) {
+      msg = 'خدمة تحديد الموقع غير متاحة مؤقتًا. تأكد من فتح GPS وحاول لاحقًا.';
+    } else if (err && err.code === err.TIMEOUT) {
+      msg = 'انتهى الوقت قبل الحصول على الموقع. جرّب مرة أخرى.';
+    }
+    setStatus(`${msg}<br><br><button class="btn btn-primary" onclick="startLocate()">جرّب مرة أخرى</button>`, true);
   }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
+}
+
+function computeNearest(latitude, longitude){
+  const enriched = branches.map(b => ({...b, dist: haversine(latitude, longitude, b.lat, b.lon)}))
+                           .sort((a,b)=>a.dist-b.dist);
+  nearest = enriched.find(b => b.dist <= MAX_KM);
+  if(nearest){
+    $nearestInfo.innerHTML = `
+      <div><b>${nearest.branch}</b></div>
+      <div>المسافة: ${nearest.dist.toFixed(2)} كم</div>
+      ${nearest.address ? `<div class="muted">${nearest.address}</div>` : ""}
+    `;
+    show($nearest);
+  }else{
+    show($noNear);
+  }
 }
 
 $btnLocate?.addEventListener("click", startLocate);
@@ -102,9 +147,10 @@ $btnRequest?.addEventListener("click", () => {
     return;
   }
   if(!nearest.whatsapp && nearest.maps_url){
-    window.open(nearest.maps_url, "_blank", "noopener");
+    const w = window.open(nearest.maps_url, "_blank", "noopener");
     $waLink.href = nearest.maps_url;
     $waFallback.hidden = false;
+    if(!w){ /* المستخدم يضغط الرابط اليدوي */ }
     return;
   }
   if(!nearest.whatsapp){
@@ -113,15 +159,16 @@ $btnRequest?.addEventListener("click", () => {
     return;
   }
   const svc = document.querySelector('input[name="service"]:checked')?.value || "استلام من الفرع";
-  const txt = `السلام عليكم، عايز أصرف وصفتي.\\nالخدمة: ${svc}\\n(تم التحويل من صفحة وصفتي - صيدليات شمس)`;
+  const txt = `السلام عليكم، عايز أصرف وصفتتي.\nالخدمة: ${svc}\n(تم التحويل من صفحة وصفتي - صيدليات شمس)`;
 
   const wa = buildWhatsAppLink(nearest.whatsapp, txt);
-  const win = window.open(wa, "_blank", "noopener");
+  const w = window.open(wa, "_blank", "noopener");
   $waLink.href = wa;
   $waFallback.hidden = false;
-  if(!win){ /* المستخدم هيضغط الرابط يدوي */ }
+  if(!w){ /* المستخدم يضغط الرابط اليدوي */ }
 });
 
+// تشغيل تلقائي لو فيه ?autostart=1
 if(qs("autostart") === "1"){
   startLocate().catch(e => {
     setStatus("خطأ غير متوقع. حاول مجددًا.", true);
