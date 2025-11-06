@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>وصفتي | صيدليات شمس</title>
   <meta name="description" content="حدد موقعك لاختيار أقرب فرع لصرف وصفتي عبر صيدليات شمس.">
-  <link rel="stylesheet" href="style.css?v=14" />
+  <link rel="stylesheet" href="style.css?v=15" />
 </head>
 <body>
   <main class="wrap">
@@ -32,18 +32,12 @@
     <!-- حالة التحميل/الأخطاء -->
     <section id="status" class="card" hidden></section>
 
-    <!-- أقرب فرع + اختيار الخدمة -->
+    <!-- أقرب فرع (بدون خيارات استلام/توصيل هنا) -->
     <section id="nearest" class="card card--accent" hidden>
       <h2 class="section-title">تم تحديد أقرب فرع</h2>
-
       <div id="nearestInfo" class="nearest-info"></div>
 
-      <!-- Chips ملوّنة لاختيار نوع الخدمة -->
-      <div class="options options--chips" id="chipsNear">
-        <button type="button" class="chip chip--blue  active" data-mode="pickup">🚶‍♂️ استلام من الفرع</button>
-        <button type="button" class="chip chip--teal"  data-mode="delivery">🏠 توصيل للمنزل</button>
-      </div>
-
+      <!-- لا تظهر الخيارات هنا. نكمل مباشرة -->
       <button id="btnContinue" class="btn btn-primary">متابعة</button>
 
       <div id="waFallbackNear" class="fallback" hidden>
@@ -52,7 +46,7 @@
       </div>
     </section>
 
-    <!-- نموذج البيانات (مرة واحدة فقط يظهر فيه إعلان النقاط) -->
+    <!-- نموذج البيانات (هنا تظهر اختيارات استلام/توصيل) -->
     <section id="formCard" class="card" hidden>
       <div class="banner banner--promo" id="promoTop">
         <div class="banner__title">اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙</div>
@@ -119,6 +113,6 @@
 
   <div id="toast" class="toast">تم فتح واتساب لإرسال طلبك ✅</div>
 
-  <script src="script.js?v=14" defer></script>
+  <script src="script.js?v=15" defer></script>
 </body>
 </html>
