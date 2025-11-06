@@ -13,6 +13,10 @@ const $nearestInfo = document.getElementById("nearestInfo");
 const $waFallbackNear = document.getElementById("waFallbackNear");
 const $waLinkNear = document.getElementById("waLinkNear");
 
+// عناصر حالة "لا يوجد فرع قريب"
+const $fallbackInfo = document.getElementById("fallbackInfo");
+const $btnNoNearContinue = document.getElementById("btnNoNearContinue");
+
 // نموذج
 const $formCard = document.getElementById("formCard");
 const modeSeg = document.getElementById("modeSeg");
@@ -32,7 +36,8 @@ const sendBtn = document.getElementById("sendBtn");
 const newReqBtn = document.getElementById("newReq");
 
 let branches = [];
-let nearest = null;
+let nearest = null;          // أقرب فرع داخل 5 كم
+let fallbackNearest = null;  // أقرب فرع مطلقًا (لو مفيش داخل 5 كم)
 let mode = "pickup";
 let gpsLink = "";
 
@@ -78,7 +83,6 @@ async function ensureBranches(){
   const bust = Date.now();
   let res = await fetch(`${BRANCHES_URL}?v=${bust}`, { cache: "no-store" });
   if (!res.ok) {
-    // Fallback لاسم آخر لو مستخدمه
     res = await fetch(`branches_generated.json?v=${bust}`, { cache: "no-store" });
   }
   if (!res.ok) throw new Error("تعذر تحميل بيانات الفروع.");
@@ -105,7 +109,10 @@ async function startLocate(){
     const { latitude, longitude } = pos.coords;
     const enriched = branches.map(b => ({...b, dist: haversine(latitude, longitude, b.lat, b.lon)}))
                              .sort((a,b)=>a.dist-b.dist);
-    nearest = enriched.find(b => b.dist <= MAX_KM);
+
+    fallbackNearest = enriched[0] || null;
+    nearest = enriched.find(b => b.dist <= MAX_KM) || null;
+
     if(nearest){
       $nearestInfo.innerHTML = `
         <div><b>${nearest.branch}</b></div>
@@ -114,6 +121,15 @@ async function startLocate(){
       `;
       show($nearest);
     }else{
+      if (fallbackNearest){
+        $fallbackInfo.innerHTML = `
+          <div><b>${fallbackNearest.branch}</b></div>
+          <div>المسافة التقريبية: ${fallbackNearest.dist.toFixed(2)} كم</div>
+          ${fallbackNearest.address ? `<div class="muted">${fallbackNearest.address}</div>` : ""}
+        `;
+      } else {
+        $fallbackInfo.innerHTML = `<div class="muted">لا توجد بيانات فروع متاحة حاليًا.</div>`;
+      }
       show($noNear);
     }
   }, err => {
@@ -134,15 +150,28 @@ $btnContinue?.addEventListener("click", () => {
     show($status);
     return;
   }
-  // اضبط وضع الخدمة حسب الاختيار
-  const svc = document.querySelector('input[name="service"]:checked')?.value || "استلام من الفرع";
-  mode = (svc === "توصيل للمنزل") ? "delivery" : "pickup";
-  // حدث أزرار السجل
+  forceFormFor(nearest, true);
+});
+
+// متابعة من شاشة "لا يوجد فرع قريب" → النموذج (أقرب فرع مطلقًا)
+$btnNoNearContinue?.addEventListener("click", () => {
+  if(!fallbackNearest){
+    setStatus("لا تتوفر بيانات فرع حاليًا.", true);
+    show($status);
+    return;
+  }
+  nearest = fallbackNearest;
+  forceFormFor(nearest, true);
+});
+
+// إعداد النموذج للحالة المطلوبة
+function forceFormFor(targetBranch, pickupDefault){
+  mode = pickupDefault ? "pickup" : "delivery";
   [...modeSeg.children].forEach(x=>x.classList.remove("active"));
   modeSeg.querySelector(`[data-mode="${mode}"]`)?.classList.add("active");
   deliveryBlock.style.display = (mode==="delivery") ? "block" : "none";
   show($formCard);
-});
+}
 
 // سويتش الخدمة داخل النموذج
 modeSeg?.addEventListener("click",(e)=>{
@@ -183,7 +212,6 @@ function buildMessage(){
 // فتح واتساب لأقرب فرع
 sendBtn?.addEventListener("click", ()=>{
   errorMsg.textContent="";
-  // تحقق بسيط
   if(!idEl.value || !rxEl.value){errorMsg.textContent="⚠ أدخل رقم الهوية والوصفة";return;}
   if(!consentEl.checked){errorMsg.textContent="⚠ برجاء الموافقة لإرسال الطلب";return;}
   if(mode==="delivery"){
@@ -224,14 +252,12 @@ sendBtn?.addEventListener("click", ()=>{
   const msg = buildMessage();
   const links = buildWhatsAppLink(intl, msg);
 
-  // افتح تبويب جديد + رابط بديل
   let w = null;
   try { w = window.open(links.primary, "_blank", "noopener"); } catch{}
   if(!w || w.closed){
     try { window.location.href = links.primary; } catch{}
   }
 
-  // انتقال لواجهة “تم الإرسال”
   waLink.href = links.fallback;
   formView.style.display="none";
   doneView.style.display="block";
@@ -248,7 +274,7 @@ function showToast(msg){
 
 // طلب جديد
 newReqBtn?.addEventListener("click", ()=>{
-  location.href = location.pathname; // رجوع لبداية الفلو
+  location.href = location.pathname;
 });
 
 // تشغيل تلقائي لو فيه ?autostart=1
