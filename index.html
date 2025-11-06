@@ -1,141 +1,240 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>وصفتي | صيدليات شمس</title>
-  <meta name="description" content="حدد موقعك لاختيار أقرب فرع لصرف وصفتي عبر صيدليات شمس.">
-  <link rel="stylesheet" href="style.css" />
+  <title>وصفتي | الصيدلية الأقرب لك</title>
   <style>
-    /* إضافات بسيطة للنموذج – تعتمد على نفس ألوانك */
-    .seg{display:flex;gap:10px;margin:14px 0 18px}
-    .seg button{flex:1;padding:14px;border-radius:14px;border:1px solid #cbd5e1;background:#e2e8f0;font-weight:800;cursor:pointer}
-    .seg button.active{background:var(--brand-blue);color:#fff;border-color:#1e40af;box-shadow:0 6px 14px rgba(37,99,235,.25)}
-    label{display:block;margin:12px 0 6px;font-weight:700}
-    input,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:12px;font-size:15px;outline:none}
-    input:focus,textarea:focus{border-color:var(--brand-blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
-    textarea{min-height:84px}
-    .muted{color:var(--muted);font-size:13px}
-    .error{color:#dc2626;margin-top:8px;font-size:14px}
-    .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:9999}
-    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial; background:#0b1220; color:#fff; margin:0}
+    .wrap{max-width:680px; margin:0 auto; padding:20px}
+    .card{background:#111a2b; border:1px solid #1f2a44; border-radius:16px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .btn{display:inline-block; padding:14px 18px; border-radius:12px; border:0; cursor:pointer; font-weight:600}
+    .btn-primary{background:#21c55d; color:#0b1220}
+    .btn-ghost{background:transparent; color:#bcd; border:1px solid #2a3a5f}
+    .btn-warning{background:#f59e0b; color:#0b1220}
+    .tag{display:inline-block; padding:6px 10px; border-radius:999px; background:#1a2744; color:#9fc}
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    .muted{color:#b8c4de}
+    .ok{color:#21c55d; font-weight:700}
+    .warn{color:#f59e0b; font-weight:700}
+    select{background:#0f172a; color:#fff; border:1px solid #2a3a5f; border-radius:12px; padding:12px; width:100%}
+    .spacer{height:14px}
+    .success{background:#0d2215; color:#9ff0b1; border:1px solid #1f6a3a; border-radius:12px; padding:12px 14px; margin-top:10px}
+    .note{background:#241a08; color:#ffdca8; border:1px solid #5a3d0b; border-radius:12px; padding:12px 14px; margin-top:10px}
+    a{color:#9fd}
   </style>
 </head>
 <body>
-  <main class="wrap">
-    <!-- شاشة الترحيب -->
-    <section id="welcome" class="card center">
-      <div class="brand">
-        <div class="sun">☀️</div>
-        <div>
-          <h1 class="title">Welcome at Shams Pharmacy</h1>
-          <p class="muted">من فضلك قم بتحديد موقعك لاختيار أقرب فرع</p>
+  <div class="wrap">
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div class="tag">خدمة وصفتي – صيدليات شمس</div>
+        <img src="./assets/logo.png" alt="Shams" style="height:40px;opacity:.9" onerror="this.style.display='none'"/>
+      </div>
+
+      <h2 style="margin:16px 0 8px">بدل ما تصرف وصفتي عادي… خلّها تفيدك! 😉</h2>
+      <p class="muted">هنوصّلك لأقرب فرع. ولو بعيد عنك، هنرشح أقرب فرع للاستلام فقط.</p>
+
+      <div class="success" id="promo">
+        ✅ الرسالة الترويجية هتفضل ظاهرة لحد ما تبدأ بنفسك.
+      </div>
+
+      <div class="spacer"></div>
+
+      <!-- الخطوة الأولى -->
+      <div id="step-ask" class="row" style="align-items:center; gap:12px">
+        <button class="btn btn-primary" id="btnLocate">حدد موقعي تلقائيًا</button>
+        <button class="btn btn-ghost" id="btnManual">اختيار يدوي</button>
+      </div>
+
+      <!-- اختيار يدوي -->
+      <div id="manualBox" style="display:none; margin-top:12px">
+        <label class="muted">اختر الفرع يدويًا (لو مقفلتش مشاركة الموقع)</label>
+        <select id="branchSelect"></select>
+        <div class="spacer"></div>
+        <button class="btn btn-primary" id="btnGoManual">اعرض تفاصيل الفرع</button>
+      </div>
+
+      <!-- نتيجة الفرع الأقرب -->
+      <div id="resultBox" style="display:none; margin-top:16px">
+        <p>أقرب فرع ليك: <span id="nearestName" class="ok"></span></p>
+        <p class="muted" id="nearestAddr"></p>
+        <p class="muted">المسافة التقريبية: <span id="nearestDist" class="ok"></span> كم</p>
+
+        <!-- إشعار لو أبعد من النطاق -->
+        <div id="pickupOnlyNote" class="note" style="display:none">
+          ⚠️ <span class="warn">لا يوجد فرع ضمن 5 كم من موقعك.</span><br>
+          يمكنك صرف الوصفة من أقرب فرع <b>للاستلام من الفرع فقط</b> (لا يتوفر توصيل للعنوان الحالي).
+        </div>
+
+        <div class="row" style="margin-top:10px">
+          <button class="btn btn-primary" id="btnWhatsapp">فتح واتساب الفرع</button>
+          <button class="btn btn-ghost" id="btnMaps">عرض الموقع على خرائط جوجل</button>
+          <button class="btn btn-ghost" id="btnNew">اختيار فرع مختلف</button>
+        </div>
+
+        <!-- زر توصيل للمنزل يظهر فقط لو داخل 5 كم (اختياري) -->
+        <div id="deliveryRow" class="row" style="margin-top:10px; display:none">
+          <button class="btn btn-warning" id="btnHomeDelivery">طلب توصيل للمنزل</button>
         </div>
       </div>
 
-      <div class="promo">
-        <div class="promo__title">اصرف وصفتك واحصل على نقاط تُستبدل لاحقًا 🎁</div>
-        <div class="promo__subtitle">ميزة الولاء الحصرية من صيدليات شمس</div>
-      </div>
+      <div id="status" class="muted" style="margin-top:14px"></div>
+    </div>
+  </div>
 
-      <button id="btnLocate" class="btn btn-primary">تحديد موقعي الآن</button>
-      <div class="hint">بالضغط على الزر سيطلب المتصفح إذن الوصول للموقع.</div>
-    </section>
+  <script>
+  // --- إعدادات عامة ---
+  const DELIVERY_RADIUS_KM = 5; // النطاق المسموح للتوصيل
 
-    <!-- حالة التحميل/الأخطاء -->
-    <section id="status" class="card" hidden></section>
+  // --- Utilities ---
+  const R = 6371; // km
+  const toRad = d => d * Math.PI / 180;
+  function haversine(lat1, lon1, lat2, lon2){
+    const dlat = toRad(lat2-lat1), dlon = toRad(lon2-lon1);
+    const a = Math.sin(dlat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dlon/2)**2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  }
 
-    <!-- أقرب فرع + اختيار الخدمة -->
-    <section id="nearest" class="card" hidden>
-      <h2 class="section-title">تم تحديد أقرب فرع</h2>
-      <div id="nearestInfo" class="nearest-info"></div>
+  // --- State ---
+  let branches = [];
+  let nearest = null; // { ...b, distance_km }
+  let userPos = null;
 
-      <div class="options">
-        <label class="opt">
-          <input type="radio" name="service" value="استلام من الفرع" checked />
-          <span>استلام من الفرع</span>
-        </label>
-        <label class="opt">
-          <input type="radio" name="service" value="توصيل للمنزل" />
-          <span>توصيل للمنزل</span>
-        </label>
-      </div>
+  const $ = sel => document.querySelector(sel);
+  const elStatus = $("#status");
+  const elManualBox = $("#manualBox");
+  const elBranchSelect = $("#branchSelect");
+  const elResultBox = $("#resultBox");
+  const elNearestName = $("#nearestName");
+  const elNearestAddr = $("#nearestAddr");
+  const elNearestDist = $("#nearestDist");
+  const elPickupOnlyNote = $("#pickupOnlyNote");
+  const elDeliveryRow = $("#deliveryRow");
 
-      <button id="btnContinue" class="btn btn-primary">متابعة</button>
+  // Load branches
+  async function loadBranches(){
+    try{
+      const res = await fetch("./branches.json?ts="+Date.now());
+      if(!res.ok) throw new Error("failed to load branches.json");
+      branches = await res.json();
+      // Fill manual select
+      elBranchSelect.innerHTML = branches.map(b =>
+        `<option value="${b.code}">${b.name} — ${b.address || ''}</option>`
+      ).join("");
+    }catch(e){
+      console.error(e);
+      elStatus.textContent = "تعذّر تحميل بيانات الفروع. تأكّد من ملف branches.json";
+    }
+  }
 
-      <div id="waFallbackNear" class="fallback" hidden>
-        تم فتح واتساب في نافذة جديدة. إن لم يُفتح تلقائيًا،
-        <a id="waLinkNear" class="link" target="_blank" rel="noopener">اضغط هنا لفتحه يدويًا</a>.
-      </div>
-    </section>
+  function getNearest(lat, lon){
+    let best = null, bestD = Infinity;
+    for(const b of branches){
+      const d = haversine(lat, lon, b.lat, b.lon);
+      if(d < bestD){ bestD = d; best = {...b, distance_km: d}; }
+    }
+    return best;
+  }
 
-    <!-- نموذج البيانات (نسخة من فلو فرعك) -->
-    <section id="formCard" class="card" hidden>
-      <div class="promo" id="promoTop">
-        اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
-        <span class="small" style="display:block;opacity:.9;font-size:13px;margin-top:4px">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
-      </div>
+  async function locate(){
+    elStatus.textContent = "جاري تحديد موقعك…";
+    return new Promise((resolve, reject)=>{
+      if(!navigator.geolocation){
+        reject(new Error("Geolocation غير مدعوم"));
+        return;
+      }
+      navigator.geolocation.getCurrentPosition(
+        pos => resolve({lat: pos.coords.latitude, lon: pos.coords.longitude}),
+        err => reject(err),
+        { enableHighAccuracy:true, timeout: 12000, maximumAge: 0 }
+      );
+    });
+  }
 
-      <p class="muted">اختَر طريقة استلام وصفتك ثم أدخل البيانات المطلوبة.</p>
+  function showResult(b, source = "auto"){
+    nearest = b;
 
-      <div class="seg" id="modeSeg">
-        <button data-mode="pickup" class="active">🚶‍♂️ استلام من الفرع</button>
-        <button data-mode="delivery">🏠 توصيل للمنزل</button>
-      </div>
+    elNearestName.textContent = b.name;
+    elNearestAddr.textContent = b.address || "";
+    elNearestDist.textContent = (b.distance_km ?? 0).toFixed(1);
 
-      <div id="formView">
-        <label>رقم الهوية</label>
-        <input id="id_number" type="text" placeholder="1012345678" inputmode="numeric">
+    // منطق 5 كم:
+    const insideRadius = typeof b.distance_km === "number" ? (b.distance_km <= DELIVERY_RADIUS_KM) : false;
 
-        <label>رقم الوصفة</label>
-        <input id="rx_number" type="text" placeholder="A123456789">
+    if(insideRadius){
+      // داخل 5 كم → نكمل عادي: إظهار خيار التوصيل (اختياري)
+      elPickupOnlyNote.style.display = "none";
+      elDeliveryRow.style.display = "flex"; // لو مش عايز زر التوصيل، خلّيها "none"
+    }else{
+      // خارج 5 كم → استلام من الفرع فقط
+      elPickupOnlyNote.style.display = "block";
+      elDeliveryRow.style.display = "none";
+    }
 
-        <div id="deliveryBlock" style="display:none;">
-          <label>رقم الجوال</label>
-          <input id="mobile" type="tel" placeholder="05xxxxxxxx" inputmode="tel">
+    elResultBox.style.display = "block";
+    elStatus.textContent = "";
+  }
 
-          <label>📍 تحديد موقعي للتوصيل</label>
-          <button id="locBtn" class="btn btn-primary" style="margin-top:6px">📍 حدد موقعي الآن</button>
-          <div id="locStatus" class="muted" style="margin-top:6px"></div>
+  // Events
+  $("#btnLocate").addEventListener("click", async ()=>{
+    try{
+      userPos = await locate();
+      const b = getNearest(userPos.lat, userPos.lon);
+      if(!b) throw new Error("لا توجد فروع في الداتا.");
+      showResult(b, "auto");
+    }catch(e){
+      elStatus.textContent = "تعذّر تحديد الموقع. استخدم الاختيار اليدوي.";
+      elManualBox.style.display = "block";
+    }
+  });
 
-          <label>وصف العنوان</label>
-          <textarea id="addr" placeholder="اسم الحي + أقرب معلم"></textarea>
-        </div>
+  $("#btnManual").addEventListener("click", ()=>{
+    elManualBox.style.display = "block";
+    elStatus.textContent = "اختر الفرع يدويًا.";
+  });
 
-        <div style="margin-top:10px">
-          <input id="consent" type="checkbox"> أوافق على مشاركة بياناتي لغرض تجهيز الطلب
-        </div>
+  $("#btnGoManual").addEventListener("click", ()=>{
+    const code = elBranchSelect.value;
+    const b = branches.find(x => x.code === code);
+    if(!b){ elStatus.textContent = "لم يتم العثور على الفرع المختار."; return; }
+    // في الاختيار اليدوي، مش هنحسب مسافة لو مفيش userPos
+    // لكن يفضل نعرضه كاستلام فقط (أو سيبه عادي). هنا هنظهره بدون مسافة:
+    const bb = {...b, distance_km: (userPos ? haversine(userPos.lat, userPos.lon, b.lat, b.lon) : NaN)};
+    showResult(bb, "manual");
+  });
 
-        <button class="btn btn-success" id="sendBtn">إرسال الطلب الآن</button>
-        <div id="errorMsg" class="error"></div>
-      </div>
+  $("#btnWhatsapp").addEventListener("click", ()=>{
+    if(!nearest) return;
+    const url = `https://wa.me/${nearest.whatsapp}`;
+    window.open(url, "_blank", "noopener");
+  });
 
-      <div id="doneView" style="display:none;text-align:center;">
-        <div id="promoBanner" class="promo" style="display:block;">
-          اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
-          <span class="small">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
-        </div>
+  $("#btnMaps").addEventListener("click", ()=>{
+    if(!nearest) return;
+    // اتجاهات إلى الفرع: لو معانا موقع المستخدم نعمل Directions، وإلا نفتح Pin الفرع فقط
+    const base = "https://www.google.com/maps/dir/?api=1";
+    let url = `${base}&destination=${nearest.lat},${nearest.lon}`;
+    if(userPos) url += `&origin=${userPos.lat},${userPos.lon}`;
+    window.open(url, "_blank", "noopener");
+  });
 
-        <h2 style="color:#16a34a">✅ تم تجهيز الطلب</h2>
-        <p>تم فتح واتساب لإرسال الرسالة.</p>
-        <a id="waLink" class="btn btn-primary" style="display:block;margin-bottom:12px" target="_blank" rel="noopener">🔗 تواصل عبر واتساب</a>
-        <button id="newReq" class="btn" style="background:#e5e7eb">طلب جديد</button>
-      </div>
-    </section>
+  $("#btnNew").addEventListener("click", ()=>{
+    elResultBox.style.display = "none";
+    elManualBox.style.display = "block";
+    elStatus.textContent = "تقدر تغيّر الفرع من القائمة.";
+  });
 
-    <!-- لا توجد فروع قريبة -->
-    <section id="noNear" class="card center" hidden>
-      <h2 class="section-title">نأسف، لا يوجد فروع قريبة من موقعكم</h2>
-      <p class="muted">جرّب تمكين الموقع أو استخدام موقع آخر.</p>
-    </section>
+  // زر توصيل للمنزل (لو داخل 5 كم) — هنا مجرد Placeholder لسيناريوك الحالي
+  $("#btnHomeDelivery").addEventListener("click", ()=>{
+    if(!nearest) return;
+    alert("خدمة التوصيل متاحة لعنوانك. أكمل الطلب من خلال واتساب الفرع وسيتم التنسيق.");
+    // تقدر هنا تفتح واتساب برسالة محددة للتوصيل أو تعرض فورم إضافي…
+  });
 
-    <footer class="footer">
-      <small>© جميع الحقوق محفوظة لصيدليات شمس</small>
-    </footer>
-  </main>
-
-  <div id="toast" class="toast">تم فتح واتساب لإرسال طلبك ✅</div>
-
-  <script src="script.js"></script>
+  // Init
+  loadBranches();
+  </script>
 </body>
 </html>
