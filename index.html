@@ -12,14 +12,12 @@
     .btn-primary{background:#21c55d; color:#0b1220}
     .btn-ghost{background:transparent; color:#bcd; border:1px solid #2a3a5f}
     .btn-warning{background:#f59e0b; color:#0b1220}
-    .tag{display:inline-block; padding:6px 10px; border-radius:999px; background:#1a2744; color:#9fc}
     .row{display:flex; gap:10px; flex-wrap:wrap}
     .muted{color:#b8c4de}
     .ok{color:#21c55d; font-weight:700}
     .warn{color:#f59e0b; font-weight:700}
     select{background:#0f172a; color:#fff; border:1px solid #2a3a5f; border-radius:12px; padding:12px; width:100%}
     .spacer{height:14px}
-    .success{background:#0d2215; color:#9ff0b1; border:1px solid #1f6a3a; border-radius:12px; padding:12px 14px; margin-top:10px}
     .note{background:#241a08; color:#ffdca8; border:1px solid #5a3d0b; border-radius:12px; padding:12px 14px; margin-top:10px}
     a{color:#9fd}
   </style>
@@ -28,43 +26,39 @@
   <div class="wrap">
     <div class="card">
       <div class="row" style="justify-content:space-between;align-items:center">
-        <div class="tag">خدمة وصفتي – صيدليات شمس</div>
+        <h3 style="margin:0">خدمة وصفتي – صيدليات شمس</h3>
         <img src="./assets/logo.png" alt="Shams" style="height:40px;opacity:.9" onerror="this.style.display='none'"/>
       </div>
 
-      <h2 style="margin:16px 0 8px">بدل ما تصرف وصفتي عادي… خلّها تفيدك! 😉</h2>
-      <p class="muted">هنوصّلك لأقرب فرع. ولو بعيد عنك، هنرشح أقرب فرع للاستلام فقط.</p>
-
-      <div class="success" id="promo">
-        ✅ الرسالة الترويجية هتفضل ظاهرة لحد ما تبدأ بنفسك.
+      <!-- شاشة البداية: بدون أي رسائل داخلية -->
+      <div id="startBox" style="margin-top:12px">
+        <p class="muted">اختر طريقة المتابعة:</p>
+        <div class="row" style="align-items:center; gap:12px">
+          <button class="btn btn-primary" id="btnLocate">حدد موقعي تلقائيًا</button>
+          <button class="btn btn-ghost" id="btnManual">اختيار يدوي</button>
+        </div>
       </div>
 
-      <div class="spacer"></div>
-
-      <!-- الخطوة الأولى -->
-      <div id="step-ask" class="row" style="align-items:center; gap:12px">
-        <button class="btn btn-primary" id="btnLocate">حدد موقعي تلقائيًا</button>
-        <button class="btn btn-ghost" id="btnManual">اختيار يدوي</button>
-      </div>
-
-      <!-- اختيار يدوي -->
+      <!-- اختيار يدوي (من غير الجملة المعترضة) -->
       <div id="manualBox" style="display:none; margin-top:12px">
-        <label class="muted">اختر الفرع يدويًا (لو مقفلتش مشاركة الموقع)</label>
+        <label class="muted">اختر الفرع يدويًا</label>
         <select id="branchSelect"></select>
         <div class="spacer"></div>
         <button class="btn btn-primary" id="btnGoManual">اعرض تفاصيل الفرع</button>
       </div>
 
-      <!-- نتيجة الفرع الأقرب -->
+      <!-- نتيجة أقرب فرع -->
       <div id="resultBox" style="display:none; margin-top:16px">
-        <p>أقرب فرع ليك: <span id="nearestName" class="ok"></span></p>
+        <p>أقرب فرع لك: <span id="nearestName" class="ok"></span></p>
         <p class="muted" id="nearestAddr"></p>
-        <p class="muted">المسافة التقريبية: <span id="nearestDist" class="ok"></span> كم</p>
+        <p class="muted" id="nearestDistWrap" style="display:none">
+          المسافة التقريبية: <span id="nearestDist" class="ok"></span> كم
+        </p>
 
-        <!-- إشعار لو أبعد من النطاق -->
+        <!-- يظهر فقط إذا كان أقرب فرع > 5 كم -->
         <div id="pickupOnlyNote" class="note" style="display:none">
           ⚠️ <span class="warn">لا يوجد فرع ضمن 5 كم من موقعك.</span><br>
-          يمكنك صرف الوصفة من أقرب فرع <b>للاستلام من الفرع فقط</b> (لا يتوفر توصيل للعنوان الحالي).
+          يمكنك صرف الوصفة من أقرب فرع <b>للاستلام من الفرع فقط</b> (لا يتوفر توصيل لعنوانك الحالي).
         </div>
 
         <div class="row" style="margin-top:10px">
@@ -73,7 +67,7 @@
           <button class="btn btn-ghost" id="btnNew">اختيار فرع مختلف</button>
         </div>
 
-        <!-- زر توصيل للمنزل يظهر فقط لو داخل 5 كم (اختياري) -->
+        <!-- زر توصيل للمنزل يظهر فقط لو داخل 5 كم -->
         <div id="deliveryRow" class="row" style="margin-top:10px; display:none">
           <button class="btn btn-warning" id="btnHomeDelivery">طلب توصيل للمنزل</button>
         </div>
@@ -84,47 +78,44 @@
   </div>
 
   <script>
-  // --- إعدادات عامة ---
-  const DELIVERY_RADIUS_KM = 5; // النطاق المسموح للتوصيل
+  // إعدادات
+  const DELIVERY_RADIUS_KM = 5; // حد 5 كم
 
-  // --- Utilities ---
-  const R = 6371; // km
-  const toRad = d => d * Math.PI / 180;
+  // Utilities
+  const R = 6371, toRad = d => d * Math.PI / 180;
   function haversine(lat1, lon1, lat2, lon2){
     const dlat = toRad(lat2-lat1), dlon = toRad(lon2-lon1);
     const a = Math.sin(dlat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dlon/2)**2;
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    return R * c;
+    return 2 * R * Math.asin(Math.sqrt(a));
   }
 
-  // --- State ---
+  // State
   let branches = [];
-  let nearest = null; // { ...b, distance_km }
+  let nearest = null;
   let userPos = null;
 
-  const $ = sel => document.querySelector(sel);
+  const $ = s => document.querySelector(s);
   const elStatus = $("#status");
+  const elStartBox = $("#startBox");
   const elManualBox = $("#manualBox");
   const elBranchSelect = $("#branchSelect");
   const elResultBox = $("#resultBox");
   const elNearestName = $("#nearestName");
   const elNearestAddr = $("#nearestAddr");
+  const elNearestDistWrap = $("#nearestDistWrap");
   const elNearestDist = $("#nearestDist");
   const elPickupOnlyNote = $("#pickupOnlyNote");
   const elDeliveryRow = $("#deliveryRow");
 
-  // Load branches
   async function loadBranches(){
     try{
       const res = await fetch("./branches.json?ts="+Date.now());
       if(!res.ok) throw new Error("failed to load branches.json");
       branches = await res.json();
-      // Fill manual select
       elBranchSelect.innerHTML = branches.map(b =>
         `<option value="${b.code}">${b.name} — ${b.address || ''}</option>`
       ).join("");
     }catch(e){
-      console.error(e);
       elStatus.textContent = "تعذّر تحميل بيانات الفروع. تأكّد من ملف branches.json";
     }
   }
@@ -139,12 +130,8 @@
   }
 
   async function locate(){
-    elStatus.textContent = "جاري تحديد موقعك…";
     return new Promise((resolve, reject)=>{
-      if(!navigator.geolocation){
-        reject(new Error("Geolocation غير مدعوم"));
-        return;
-      }
+      if(!navigator.geolocation) return reject(new Error("Geolocation غير مدعوم"));
       navigator.geolocation.getCurrentPosition(
         pos => resolve({lat: pos.coords.latitude, lon: pos.coords.longitude}),
         err => reject(err),
@@ -153,67 +140,72 @@
     });
   }
 
-  function showResult(b, source = "auto"){
+  function showResult(b, showDistance){
     nearest = b;
-
     elNearestName.textContent = b.name;
     elNearestAddr.textContent = b.address || "";
-    elNearestDist.textContent = (b.distance_km ?? 0).toFixed(1);
 
-    // منطق 5 كم:
-    const insideRadius = typeof b.distance_km === "number" ? (b.distance_km <= DELIVERY_RADIUS_KM) : false;
+    if (showDistance && typeof b.distance_km === "number" && isFinite(b.distance_km)) {
+      elNearestDistWrap.style.display = "block";
+      elNearestDist.textContent = b.distance_km.toFixed(1);
+    } else {
+      elNearestDistWrap.style.display = "none";
+    }
 
-    if(insideRadius){
-      // داخل 5 كم → نكمل عادي: إظهار خيار التوصيل (اختياري)
+    // منطق 5 كم
+    const inside = typeof b.distance_km === "number" ? (b.distance_km <= DELIVERY_RADIUS_KM) : false;
+    if (inside) {
       elPickupOnlyNote.style.display = "none";
-      elDeliveryRow.style.display = "flex"; // لو مش عايز زر التوصيل، خلّيها "none"
-    }else{
-      // خارج 5 كم → استلام من الفرع فقط
+      elDeliveryRow.style.display = "flex";   // لو مش عايز زر التوصيل، خلّيها "none"
+    } else {
       elPickupOnlyNote.style.display = "block";
       elDeliveryRow.style.display = "none";
     }
 
+    elStartBox.style.display = "none";
+    elManualBox.style.display = "none";
     elResultBox.style.display = "block";
     elStatus.textContent = "";
   }
 
   // Events
   $("#btnLocate").addEventListener("click", async ()=>{
+    elStatus.textContent = "جاري تحديد موقعك…";
     try{
       userPos = await locate();
       const b = getNearest(userPos.lat, userPos.lon);
       if(!b) throw new Error("لا توجد فروع في الداتا.");
-      showResult(b, "auto");
+      showResult(b, true);
     }catch(e){
-      elStatus.textContent = "تعذّر تحديد الموقع. استخدم الاختيار اليدوي.";
+      elStatus.textContent = "تعذّر تحديد الموقع. يمكنك الاختيار يدويًا.";
       elManualBox.style.display = "block";
     }
   });
 
   $("#btnManual").addEventListener("click", ()=>{
+    elStartBox.style.display = "none";
     elManualBox.style.display = "block";
-    elStatus.textContent = "اختر الفرع يدويًا.";
+    elStatus.textContent = "";
   });
 
   $("#btnGoManual").addEventListener("click", ()=>{
     const code = elBranchSelect.value;
     const b = branches.find(x => x.code === code);
     if(!b){ elStatus.textContent = "لم يتم العثور على الفرع المختار."; return; }
-    // في الاختيار اليدوي، مش هنحسب مسافة لو مفيش userPos
-    // لكن يفضل نعرضه كاستلام فقط (أو سيبه عادي). هنا هنظهره بدون مسافة:
-    const bb = {...b, distance_km: (userPos ? haversine(userPos.lat, userPos.lon, b.lat, b.lon) : NaN)};
-    showResult(bb, "manual");
+    // في الاختيار اليدوي مش هنحسب المسافة (مش مطلوب)، فنعرض بدون مسافة ومن غير حكم 5 كم
+    const bb = {...b, distance_km: NaN};
+    elPickupOnlyNote.style.display = "none";   // لا نعرض تنبيه الاستلام فقط في الاختيار اليدوي
+    elDeliveryRow.style.display = "none";      // ولا نعرض زر توصيل هنا (قرارك)
+    showResult(bb, false);
   });
 
   $("#btnWhatsapp").addEventListener("click", ()=>{
     if(!nearest) return;
-    const url = `https://wa.me/${nearest.whatsapp}`;
-    window.open(url, "_blank", "noopener");
+    window.open(`https://wa.me/${nearest.whatsapp}`, "_blank", "noopener");
   });
 
   $("#btnMaps").addEventListener("click", ()=>{
     if(!nearest) return;
-    // اتجاهات إلى الفرع: لو معانا موقع المستخدم نعمل Directions، وإلا نفتح Pin الفرع فقط
     const base = "https://www.google.com/maps/dir/?api=1";
     let url = `${base}&destination=${nearest.lat},${nearest.lon}`;
     if(userPos) url += `&origin=${userPos.lat},${userPos.lon}`;
@@ -222,15 +214,15 @@
 
   $("#btnNew").addEventListener("click", ()=>{
     elResultBox.style.display = "none";
-    elManualBox.style.display = "block";
-    elStatus.textContent = "تقدر تغيّر الفرع من القائمة.";
+    elStartBox.style.display = "block";
+    elManualBox.style.display = "none";
+    elStatus.textContent = "";
   });
 
-  // زر توصيل للمنزل (لو داخل 5 كم) — هنا مجرد Placeholder لسيناريوك الحالي
   $("#btnHomeDelivery").addEventListener("click", ()=>{
     if(!nearest) return;
     alert("خدمة التوصيل متاحة لعنوانك. أكمل الطلب من خلال واتساب الفرع وسيتم التنسيق.");
-    // تقدر هنا تفتح واتساب برسالة محددة للتوصيل أو تعرض فورم إضافي…
+    // هنا ممكن تفتح واتساب برسالة توصيل أو تعرض فورم إضافي… حسب نسختك
   });
 
   // Init
