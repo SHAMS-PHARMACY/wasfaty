@@ -1,222 +1,141 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>خدمة وصفتي – صيدليات شمس</title>
-<style>
-  :root{
-    --primary:#0284c7; --primary-dark:#0369a1;
-    --success:#16a34a; --danger:#dc2626;
-    --bg:#f1f5f9; --ink:#0f172a; --muted:#64748b;
-    --radius:16px;
-  }
-  body{font-family:Tahoma,Arial,sans-serif;margin:0;background:linear-gradient(180deg,#eef6ff,#f8fafc)}
-  .wrap{max-width:760px;margin:22px auto;background:#fff;border-radius:var(--radius);box-shadow:0 10px 28px rgba(2,8,23,.08);padding:22px}
-  .brand{display:flex;align-items:center;gap:12px;margin-bottom:8px}
-  .brand img{height:48px;width:auto;border-radius:12px;object-fit:cover;display:block}
-  .brand .title{font-weight:800;color:var(--ink);font-size:18px}
-  h1{margin:8px 0 6px;font-size:24px;color:var(--ink)}
-  p{margin:0;color:#334155}
-
-  .seg{display:flex;gap:10px;margin:14px 0 18px}
-  .seg button{flex:1;padding:14px;border-radius:14px;border:1px solid #cbd5e1;background:#e2e8f0;font-weight:800;cursor:pointer}
-  .seg button.active{background:var(--primary);color:#fff;border-color:var(--primary-dark);box-shadow:0 6px 14px rgba(2,132,199,.25)}
-
-  label{display:block;margin:12px 0 6px;font-weight:700;color:var(--ink)}
-  input,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:12px;font-size:15px;outline:none}
-  input:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(2,132,199,.15)}
-  textarea{min-height:84px}
-
-  .btn{width:100%;padding:16px;border:none;border-radius:14px;font-size:17px;font-weight:900;cursor:pointer}
-  .btn-primary{background:var(--primary);color:#fff;transition:transform .08s ease, box-shadow .2s ease}
-  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 18px rgba(2,132,199,.25)}
-  .btn-primary.pulse{animation:pulse 1.4s infinite}
-  .btn-primary.sending{animation:sending .8s ease-in-out 1}
-  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(2,132,199,.35)}70%{box-shadow:0 0 0 14px rgba(2,132,199,0)}100%{box-shadow:0 0 0 0 rgba(2,132,199,0)}}
-  @keyframes sending{0%{transform:scale(1)}50%{transform:scale(1.03)}100%{transform:scale(1)}}
-
-  .muted{color:var(--muted);font-size:13px}
-  .error{color:var(--danger);margin-top:8px;font-size:14px}
-  #doneView{text-align:center}
-  .footer{margin-top:18px;text-align:center;color:#64748b;font-size:13px}
-
-  .promo{margin:14px 0 12px;background:linear-gradient(90deg,#0ea5e9,#22c55e);color:#fff;
-         padding:12px 14px;border-radius:12px;font-weight:800;box-shadow:0 10px 22px rgba(2,132,199,.22);animation:fadeIn .6s ease}
-  .promo .small{display:block;font-weight:600;opacity:.9;font-size:13px;margin-top:4px}
-  @keyframes fadeIn{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
-
-  .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:9999}
-  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>وصفتي | صيدليات شمس</title>
+  <meta name="description" content="حدد موقعك لاختيار أقرب فرع لصرف وصفتي عبر صيدليات شمس.">
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* إضافات بسيطة للنموذج – تعتمد على نفس ألوانك */
+    .seg{display:flex;gap:10px;margin:14px 0 18px}
+    .seg button{flex:1;padding:14px;border-radius:14px;border:1px solid #cbd5e1;background:#e2e8f0;font-weight:800;cursor:pointer}
+    .seg button.active{background:var(--brand-blue);color:#fff;border-color:#1e40af;box-shadow:0 6px 14px rgba(37,99,235,.25)}
+    label{display:block;margin:12px 0 6px;font-weight:700}
+    input,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:12px;font-size:15px;outline:none}
+    input:focus,textarea:focus{border-color:var(--brand-blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
+    textarea{min-height:84px}
+    .muted{color:var(--muted);font-size:13px}
+    .error{color:#dc2626;margin-top:8px;font-size:14px}
+    .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:9999}
+    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  </style>
 </head>
 <body>
-<div class="wrap">
-  <!-- لوجو -->
-  <div class="brand">
-    <img src="logo.jpg" alt="Shams Pharmacy" onerror="this.style.display='none'">
-    <div class="title">خدمة وصفتي – صيدليات شمس</div>
-  </div>
+  <main class="wrap">
+    <!-- شاشة الترحيب -->
+    <section id="welcome" class="card center">
+      <div class="brand">
+        <div class="sun">☀️</div>
+        <div>
+          <h1 class="title">Welcome at Shams Pharmacy</h1>
+          <p class="muted">من فضلك قم بتحديد موقعك لاختيار أقرب فرع</p>
+        </div>
+      </div>
 
-  <!-- ✅ شريط الدعاية من أول الصفحة -->
-  <div class="promo" id="promoTop">
-    اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
-    <span class="small">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
-  </div>
+      <div class="promo">
+        <div class="promo__title">اصرف وصفتك واحصل على نقاط تُستبدل لاحقًا 🎁</div>
+        <div class="promo__subtitle">ميزة الولاء الحصرية من صيدليات شمس</div>
+      </div>
 
-  <p class="muted">اختَر طريقة استلام وصفتك ثم أدخل البيانات المطلوبة.</p>
+      <button id="btnLocate" class="btn btn-primary">تحديد موقعي الآن</button>
+      <div class="hint">بالضغط على الزر سيطلب المتصفح إذن الوصول للموقع.</div>
+    </section>
 
-  <div class="seg" id="modeSeg">
-    <button data-mode="pickup" class="active">🚶‍♂️ استلام من الفرع</button>
-    <button data-mode="delivery">🏠 توصيل للمنزل</button>
-  </div>
+    <!-- حالة التحميل/الأخطاء -->
+    <section id="status" class="card" hidden></section>
 
-  <div id="formView">
-    <label>رقم الهوية</label>
-    <input id="id_number" type="text" placeholder="1012345678">
+    <!-- أقرب فرع + اختيار الخدمة -->
+    <section id="nearest" class="card" hidden>
+      <h2 class="section-title">تم تحديد أقرب فرع</h2>
+      <div id="nearestInfo" class="nearest-info"></div>
 
-    <label>رقم الوصفة</label>
-    <input id="rx_number" type="text" placeholder="A123456789">
+      <div class="options">
+        <label class="opt">
+          <input type="radio" name="service" value="استلام من الفرع" checked />
+          <span>استلام من الفرع</span>
+        </label>
+        <label class="opt">
+          <input type="radio" name="service" value="توصيل للمنزل" />
+          <span>توصيل للمنزل</span>
+        </label>
+      </div>
 
-    <div id="deliveryBlock" style="display:none;">
-      <label>رقم الجوال</label>
-      <input id="mobile" type="tel" placeholder="05xxxxxxxx">
+      <button id="btnContinue" class="btn btn-primary">متابعة</button>
 
-      <label>📍 تحديد موقعي</label>
-      <button id="locBtn" class="btn btn-primary" style="margin-top:6px">📍 حدد موقعي الآن</button>
-      <div id="locStatus" class="muted" style="margin-top:6px"></div>
+      <div id="waFallbackNear" class="fallback" hidden>
+        تم فتح واتساب في نافذة جديدة. إن لم يُفتح تلقائيًا،
+        <a id="waLinkNear" class="link" target="_blank" rel="noopener">اضغط هنا لفتحه يدويًا</a>.
+      </div>
+    </section>
 
-      <label>وصف العنوان</label>
-      <textarea id="addr" placeholder="اسم الحي + أقرب معلم"></textarea>
-    </div>
+    <!-- نموذج البيانات (نسخة من فلو فرعك) -->
+    <section id="formCard" class="card" hidden>
+      <div class="promo" id="promoTop">
+        اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
+        <span class="small" style="display:block;opacity:.9;font-size:13px;margin-top:4px">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
+      </div>
 
-    <div style="margin-top:10px">
-      <input id="consent" type="checkbox"> أوافق على مشاركة بياناتي لغرض تجهيز الطلب
-    </div>
+      <p class="muted">اختَر طريقة استلام وصفتك ثم أدخل البيانات المطلوبة.</p>
 
-    <button class="btn btn-primary pulse" id="sendBtn">إرسال الطلب الآن</button>
-    <div id="errorMsg" class="error"></div>
-  </div>
+      <div class="seg" id="modeSeg">
+        <button data-mode="pickup" class="active">🚶‍♂️ استلام من الفرع</button>
+        <button data-mode="delivery">🏠 توصيل للمنزل</button>
+      </div>
 
-  <div id="doneView" style="display:none;text-align:center;">
-    <div id="promoBanner" class="promo" style="display:block;">
-      اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
-      <span class="small">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
-    </div>
+      <div id="formView">
+        <label>رقم الهوية</label>
+        <input id="id_number" type="text" placeholder="1012345678" inputmode="numeric">
 
-    <h2 style="color:var(--success)">✅ تم تجهيز الطلب</h2>
-    <p>تم فتح واتساب لإرسال الرسالة.</p>
-    <a id="waLink" class="btn btn-primary" style="display:block;margin-bottom:12px" target="_blank">🔗 تواصل عبر واتساب</a>
-    <button id="newReq" class="btn" style="background:#e5e7eb">طلب جديد</button>
-  </div>
+        <label>رقم الوصفة</label>
+        <input id="rx_number" type="text" placeholder="A123456789">
 
-  <div class="footer">
-    صيدلية شمس – حي الدار البيضاء – شارع ابن حجر • واتساب: 0592627644
-  </div>
-</div>
+        <div id="deliveryBlock" style="display:none;">
+          <label>رقم الجوال</label>
+          <input id="mobile" type="tel" placeholder="05xxxxxxxx" inputmode="tel">
 
-<div id="toast" class="toast">تم فتح واتساب لإرسال طلبك ✅</div>
+          <label>📍 تحديد موقعي للتوصيل</label>
+          <button id="locBtn" class="btn btn-primary" style="margin-top:6px">📍 حدد موقعي الآن</button>
+          <div id="locStatus" class="muted" style="margin-top:6px"></div>
 
-<script>
-(function(){
-  const WHATSAPP = "966592627644";
-  const EMO_PICKUP="🚶‍♂️", EMO_DELIVERY="🏠", EMO_PIN="📍";
-  const modeSeg=document.getElementById("modeSeg");
-  const deliveryBlock=document.getElementById("deliveryBlock");
-  const idEl=document.getElementById("id_number");
-  const rxEl=document.getElementById("rx_number");
-  const mobileEl=document.getElementById("mobile");
-  const addrEl=document.getElementById("addr");
-  const consentEl=document.getElementById("consent");
-  const locStatus=document.getElementById("locStatus");
-  const errorMsg=document.getElementById("errorMsg");
-  const formView=document.getElementById("formView");
-  const doneView=document.getElementById("doneView");
-  const waLink=document.getElementById("waLink");
-  const toast=document.getElementById("toast");
-  const promo=document.getElementById("promoBanner");
-  const sendBtn=document.getElementById("sendBtn");
+          <label>وصف العنوان</label>
+          <textarea id="addr" placeholder="اسم الحي + أقرب معلم"></textarea>
+        </div>
 
-  let mode="pickup", gpsLink="";
+        <div style="margin-top:10px">
+          <input id="consent" type="checkbox"> أوافق على مشاركة بياناتي لغرض تجهيز الطلب
+        </div>
 
-  // استرجاع الحالة عند فتح الصفحة
-  const SAVED=localStorage.getItem("shams_wasfaty_state");
-  if(SAVED){
-    try{
-      const st=JSON.parse(SAVED);
-      if(st&&st.done){
-        formView.style.display="none";
-        doneView.style.display="block";
-        promo.style.display="block";
-        waLink.href=st.waURL||"#";
-      }
-    }catch(e){}
-  }
+        <button class="btn btn-success" id="sendBtn">إرسال الطلب الآن</button>
+        <div id="errorMsg" class="error"></div>
+      </div>
 
-  modeSeg.addEventListener("click",(e)=>{
-    const b=e.target.closest("button[data-mode]");
-    if(!b)return;
-    mode=b.dataset.mode;
-    [...modeSeg.children].forEach(x=>x.classList.remove("active"));
-    b.classList.add("active");
-    deliveryBlock.style.display=(mode==="delivery")?"block":"none";
-  });
+      <div id="doneView" style="display:none;text-align:center;">
+        <div id="promoBanner" class="promo" style="display:block;">
+          اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
+          <span class="small">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
+        </div>
 
-  document.getElementById("locBtn").onclick=()=>{
-    locStatus.textContent="⏳ جارِ تحديد الموقع...";
-    if(!navigator.geolocation){locStatus.textContent="⚠ المتصفح لا يدعم تحديد الموقع";return;}
-    navigator.geolocation.getCurrentPosition(pos=>{
-      gpsLink=`https://maps.google.com/?q=${pos.coords.latitude},${pos.coords.longitude}`;
-      locStatus.textContent="✅ تم التقاط موقعك";
-    },()=>{locStatus.textContent="⚠ تعذر تحديد الموقع";},
-    {enableHighAccuracy:true,timeout:12000,maximumAge:0});
-  };
+        <h2 style="color:#16a34a">✅ تم تجهيز الطلب</h2>
+        <p>تم فتح واتساب لإرسال الرسالة.</p>
+        <a id="waLink" class="btn btn-primary" style="display:block;margin-bottom:12px" target="_blank" rel="noopener">🔗 تواصل عبر واتساب</a>
+        <button id="newReq" class="btn" style="background:#e5e7eb">طلب جديد</button>
+      </div>
+    </section>
 
-  function buildMessage(){
-    let m=(mode==="pickup"?`${EMO_PICKUP} استلام من الفرع`:`${EMO_DELIVERY} توصيل للمنزل`)+"\n";
-    m+=`رقم الهوية: ${idEl.value}\n`;
-    m+=`رقم الوصفة: ${rxEl.value}\n`;
-    if(mode==="delivery"){
-      m+=`الجوال: ${mobileEl.value}\n`;
-      m+=`العنوان: ${addrEl.value}\n`;
-      m+=`${EMO_PIN} الموقع: ${gpsLink||"غير محدد"}\n`;
-    }
-    m+=`\n*تمت موافقة العميل على مشاركة البيانات*`;
-    return m;
-  }
+    <!-- لا توجد فروع قريبة -->
+    <section id="noNear" class="card center" hidden>
+      <h2 class="section-title">نأسف، لا يوجد فروع قريبة من موقعكم</h2>
+      <p class="muted">جرّب تمكين الموقع أو استخدام موقع آخر.</p>
+    </section>
 
-  sendBtn.onclick=()=>{
-    errorMsg.textContent="";
-    sendBtn.classList.add("sending");
-    if(!idEl.value||!rxEl.value){errorMsg.textContent="⚠ أدخل رقم الهوية والوصفة";return sendBtn.classList.remove("sending");}
-    if(!consentEl.checked){errorMsg.textContent="⚠ برجاء الموافقة لإرسال الطلب";return sendBtn.classList.remove("sending");}
-    if(mode==="delivery"){
-      if(!mobileEl.value){errorMsg.textContent="⚠ أدخل رقم الجوال";return sendBtn.classList.remove("sending");}
-      if(!gpsLink){errorMsg.textContent="⚠ يجب تحديد الموقع للتوصيل";return sendBtn.classList.remove("sending");}
-    }
-    const msg=buildMessage();
-    const waURL="https://wa.me/"+WHATSAPP+"?text="+encodeURIComponent(msg);
-    localStorage.setItem("shams_wasfaty_state",JSON.stringify({done:true,waURL:waURL,ts:Date.now()}));
-    window.location.href=waURL;
-    formView.style.display="none";
-    doneView.style.display="block";
-    promo.style.display="block";
-    waLink.href=waURL;
-    showToast("تم فتح واتساب لإرسال طلبك ✅");
-    setTimeout(()=>sendBtn.classList.remove("sending"),900);
-  };
+    <footer class="footer">
+      <small>© جميع الحقوق محفوظة لصيدليات شمس</small>
+    </footer>
+  </main>
 
-  function showToast(msg){
-    toast.textContent=msg||"تم تنفيذ العملية";
-    toast.classList.add("show");
-    setTimeout(()=>toast.classList.remove("show"),2200);
-  }
+  <div id="toast" class="toast">تم فتح واتساب لإرسال طلبك ✅</div>
 
-  document.getElementById("newReq").onclick=()=>{
-    localStorage.removeItem("shams_wasfaty_state");
-    location.reload();
-  };
-})();
-</script>
+  <script src="script.js"></script>
 </body>
 </html>
