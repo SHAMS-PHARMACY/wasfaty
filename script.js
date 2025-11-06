@@ -35,6 +35,9 @@ const toast = document.getElementById("toast");
 const sendBtn = document.getElementById("sendBtn");
 const newReqBtn = document.getElementById("newReq");
 
+// دعم Chips في شاشة أقرب فرع (للتناسق الشكلي فقط)
+const chipsNear = document.getElementById("chipsNear");
+
 let branches = [];
 let nearest = null;          // أقرب فرع داخل 5 كم
 let fallbackNearest = null;  // أقرب فرع مطلقًا (لو مفيش داخل 5 كم)
@@ -83,6 +86,7 @@ async function ensureBranches(){
   const bust = Date.now();
   let res = await fetch(`${BRANCHES_URL}?v=${bust}`, { cache: "no-store" });
   if (!res.ok) {
+    // Fallback لاسم آخر لو مستخدمه
     res = await fetch(`branches_generated.json?v=${bust}`, { cache: "no-store" });
   }
   if (!res.ok) throw new Error("تعذر تحميل بيانات الفروع.");
@@ -150,7 +154,7 @@ $btnContinue?.addEventListener("click", () => {
     show($status);
     return;
   }
-  forceFormFor(nearest, true);
+  forceFormFor(nearest, /*pickup*/ true);
 });
 
 // متابعة من شاشة "لا يوجد فرع قريب" → النموذج (أقرب فرع مطلقًا)
@@ -160,28 +164,40 @@ $btnNoNearContinue?.addEventListener("click", () => {
     show($status);
     return;
   }
-  nearest = fallbackNearest;
-  forceFormFor(nearest, true);
+  nearest = fallbackNearest; // عيّن الأقرب كهدف
+  forceFormFor(nearest, /*pickup*/ true);
 });
 
 // إعداد النموذج للحالة المطلوبة
 function forceFormFor(targetBranch, pickupDefault){
   mode = pickupDefault ? "pickup" : "delivery";
-  [...modeSeg.children].forEach(x=>x.classList.remove("active"));
-  modeSeg.querySelector(`[data-mode="${mode}"]`)?.classList.add("active");
+
+  // فعّل الChip المناسبة في المجموعتين (لو موجودة)
+  [document.getElementById("chipsNear"), modeSeg].forEach(group=>{
+    if(!group) return;
+    [...group.querySelectorAll(".chip")].forEach(x=>x.classList.remove("active"));
+    const btn = group.querySelector(`[data-mode="${mode}"]`);
+    if(btn) btn.classList.add("active");
+  });
+
   deliveryBlock.style.display = (mode==="delivery") ? "block" : "none";
   show($formCard);
 }
 
-// سويتش الخدمة داخل النموذج
-modeSeg?.addEventListener("click",(e)=>{
-  const b=e.target.closest("button[data-mode]");
-  if(!b)return;
-  mode=b.dataset.mode;
-  [...modeSeg.children].forEach(x=>x.classList.remove("active"));
-  b.classList.add("active");
-  deliveryBlock.style.display=(mode==="delivery")?"block":"none";
-});
+// سويتش الخدمة داخل أي مجموعة Chips
+function attachChipsToggle(group){
+  if(!group) return;
+  group.addEventListener("click",(e)=>{
+    const b=e.target.closest("button[data-mode]");
+    if(!b) return;
+    mode=b.dataset.mode;
+    [...group.querySelectorAll(".chip")].forEach(x=>x.classList.remove("active"));
+    b.classList.add("active");
+    deliveryBlock.style.display=(mode==="delivery")?"block":"none";
+  });
+}
+attachChipsToggle(document.getElementById("chipsNear"));
+attachChipsToggle(modeSeg);
 
 // تحديد موقع للتوصيل
 document.getElementById("locBtn")?.addEventListener("click", ()=>{
@@ -212,6 +228,7 @@ function buildMessage(){
 // فتح واتساب لأقرب فرع
 sendBtn?.addEventListener("click", ()=>{
   errorMsg.textContent="";
+  // تحقق بسيط
   if(!idEl.value || !rxEl.value){errorMsg.textContent="⚠ أدخل رقم الهوية والوصفة";return;}
   if(!consentEl.checked){errorMsg.textContent="⚠ برجاء الموافقة لإرسال الطلب";return;}
   if(mode==="delivery"){
@@ -223,7 +240,7 @@ sendBtn?.addEventListener("click", ()=>{
     return;
   }
   if(!nearest.whatsapp && nearest.maps_url){
-    const w = window.open(nearest.maps_url, "_blank", "noopener");
+    window.open(nearest.maps_url, "_blank", "noopener");
     waLink.href = nearest.maps_url;
     formView.style.display="none";
     doneView.style.display="block";
@@ -252,12 +269,14 @@ sendBtn?.addEventListener("click", ()=>{
   const msg = buildMessage();
   const links = buildWhatsAppLink(intl, msg);
 
+  // افتح تبويب جديد + رابط بديل
   let w = null;
   try { w = window.open(links.primary, "_blank", "noopener"); } catch{}
   if(!w || w.closed){
     try { window.location.href = links.primary; } catch{}
   }
 
+  // انتقال لواجهة “تم الإرسال”
   waLink.href = links.fallback;
   formView.style.display="none";
   doneView.style.display="block";
@@ -274,7 +293,7 @@ function showToast(msg){
 
 // طلب جديد
 newReqBtn?.addEventListener("click", ()=>{
-  location.href = location.pathname;
+  location.href = location.pathname; // رجوع لبداية الفلو
 });
 
 // تشغيل تلقائي لو فيه ?autostart=1
