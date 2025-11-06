@@ -5,20 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>وصفتي | صيدليات شمس</title>
   <meta name="description" content="حدد موقعك لاختيار أقرب فرع لصرف وصفتي عبر صيدليات شمس.">
-  <link rel="stylesheet" href="style.css" />
-  <style>
-    .seg{display:flex;gap:10px;margin:14px 0 18px}
-    .seg button{flex:1;padding:14px;border-radius:14px;border:1px solid #cbd5e1;background:#e2e8f0;font-weight:800;cursor:pointer}
-    .seg button.active{background:var(--brand-blue);color:#fff;border-color:#1e40af;box-shadow:0 6px 14px rgba(37,99,235,.25)}
-    label{display:block;margin:12px 0 6px;font-weight:700}
-    input,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:12px;font-size:15px;outline:none}
-    input:focus,textarea:focus{border-color:var(--brand-blue);box-shadow:0 0 0 3px rgba(37,99,235,.15)}
-    textarea{min-height:84px}
-    .muted{color:var(--muted);font-size:13px}
-    .error{color:#dc2626;margin-top:8px;font-size:14px}
-    .toast{position:fixed;top:16px;left:50%;transform:translateX(-50%);background:#111827;color:#fff;padding:12px 16px;border-radius:12px;box-shadow:0 10px 24px rgba(0,0,0,.2);opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;z-index:9999}
-    .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-  </style>
+  <link rel="stylesheet" href="style.css?v=14" />
 </head>
 <body>
   <main class="wrap">
@@ -27,17 +14,18 @@
       <div class="brand">
         <div class="sun">☀️</div>
         <div>
-          <h1 class="title">Welcome at Shams Pharmacy</h1>
+          <h1 class="title">مرحبًا بك في صيدليات شمس</h1>
           <p class="muted">من فضلك قم بتحديد موقعك لاختيار أقرب فرع</p>
         </div>
       </div>
 
-      <div class="promo">
-        <div class="promo__title">اصرف وصفتك واحصل على نقاط تُستبدل لاحقًا 🎁</div>
-        <div class="promo__subtitle">ميزة الولاء الحصرية من صيدليات شمس</div>
+      <!-- بانر دعائي ملوّن وواضح -->
+      <div class="banner banner--promo">
+        <div class="banner__title">اصرف وصفتك واحصل على نقاط ولاء تُستبدل لاحقًا 🎁</div>
+        <div class="banner__sub">ميزة الولاء الحصرية من صيدليات شمس</div>
       </div>
 
-      <button id="btnLocate" class="btn btn-primary">تحديد موقعي الآن</button>
+      <button id="btnLocate" class="btn btn-primary btn-lg">تحديد موقعي الآن</button>
       <div class="hint">بالضغط على الزر سيطلب المتصفح إذن الوصول للموقع.</div>
     </section>
 
@@ -45,19 +33,15 @@
     <section id="status" class="card" hidden></section>
 
     <!-- أقرب فرع + اختيار الخدمة -->
-    <section id="nearest" class="card" hidden>
+    <section id="nearest" class="card card--accent" hidden>
       <h2 class="section-title">تم تحديد أقرب فرع</h2>
+
       <div id="nearestInfo" class="nearest-info"></div>
 
-      <div class="options">
-        <label class="opt">
-          <input type="radio" name="service" value="استلام من الفرع" checked />
-          <span>استلام من الفرع</span>
-        </label>
-        <label class="opt">
-          <input type="radio" name="service" value="توصيل للمنزل" />
-          <span>توصيل للمنزل</span>
-        </label>
+      <!-- Chips ملوّنة لاختيار نوع الخدمة -->
+      <div class="options options--chips" id="chipsNear">
+        <button type="button" class="chip chip--blue  active" data-mode="pickup">🚶‍♂️ استلام من الفرع</button>
+        <button type="button" class="chip chip--teal"  data-mode="delivery">🏠 توصيل للمنزل</button>
       </div>
 
       <button id="btnContinue" class="btn btn-primary">متابعة</button>
@@ -68,18 +52,18 @@
       </div>
     </section>
 
-    <!-- نموذج البيانات -->
+    <!-- نموذج البيانات (مرة واحدة فقط يظهر فيه إعلان النقاط) -->
     <section id="formCard" class="card" hidden>
-      <div class="promo" id="promoTop">
-        اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
-        <span class="small" style="display:block;opacity:.9;font-size:13px;margin-top:4px">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
+      <div class="banner banner--promo" id="promoTop">
+        <div class="banner__title">اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙</div>
+        <div class="banner__sub">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط</div>
       </div>
 
       <p class="muted">اختَر طريقة استلام وصفتك ثم أدخل البيانات المطلوبة.</p>
 
-      <div class="seg" id="modeSeg">
-        <button data-mode="pickup" class="active">🚶‍♂️ استلام من الفرع</button>
-        <button data-mode="delivery">🏠 توصيل للمنزل</button>
+      <div class="options options--chips" id="modeSeg">
+        <button type="button" class="chip chip--blue active" data-mode="pickup">🚶‍♂️ استلام من الفرع</button>
+        <button type="button" class="chip chip--teal" data-mode="delivery">🏠 توصيل للمنزل</button>
       </div>
 
       <div id="formView">
@@ -105,16 +89,12 @@
           <input id="consent" type="checkbox"> أوافق على مشاركة بياناتي لغرض تجهيز الطلب
         </div>
 
-        <button class="btn btn-success" id="sendBtn">إرسال الطلب الآن</button>
+        <button class="btn btn-primary btn-glow btn-lg" id="sendBtn">✨ إرسال الطلب الآن</button>
         <div id="errorMsg" class="error"></div>
       </div>
 
       <div id="doneView" style="display:none;text-align:center;">
-        <div id="promoBanner" class="promo" style="display:block;">
-          اصرف وصفتك من صيدليات شمس واكسب نقاط ولاء تتحول خصم على مشترياتك 💙
-          <span class="small">لا تنسَ تفعيل رقمك عند الصرف لتجميع النقاط.</span>
-        </div>
-
+        <!-- تمت إزالة تكرار شريط الدعاية هنا -->
         <h2 style="color:#16a34a">✅ تم تجهيز الطلب</h2>
         <p>تم فتح واتساب لإرسال الرسالة.</p>
         <a id="waLink" class="btn btn-primary" style="display:block;margin-bottom:12px" target="_blank" rel="noopener">🔗 تواصل عبر واتساب</a>
@@ -128,10 +108,8 @@
       <p class="muted" style="margin-top:-6px">
         لكن يمكنك استلام الوصفة من أقرب فرع لك بنفسك.
       </p>
-      <div id="fallbackInfo" class="nearest-info" style="margin:12px 0 14px"></div>
-      <button id="btnNoNearContinue" class="btn btn-primary" style="width:100%">
-        اضغط هنا للمتابعة
-      </button>
+      <div id="fallbackInfo" class="nearest-info"></div>
+      <button id="btnNoNearContinue" class="btn btn-primary" style="width:100%">اضغط هنا للمتابعة</button>
     </section>
 
     <footer class="footer">
@@ -141,7 +119,6 @@
 
   <div id="toast" class="toast">تم فتح واتساب لإرسال طلبك ✅</div>
 
-  <!-- اربط ملف الجافاسكريبت الصحيح -->
-  <script src="script.js?v=12" defer></script>
+  <script src="script.js?v=14" defer></script>
 </body>
 </html>
