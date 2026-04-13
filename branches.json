@@ -314,8 +314,8 @@
   {
     "branch": "P0040",
     "address": "الرياض/ حي النظيم",
-    "lat": NaN,
-    "lon": NaN,
+    "lat": null,
+    "lon": null,
     "whatsapp": "https://wa.me/966596587052",
     "maps_url": "https://maps.app.goo.gl/KP3gw8phYw3wGZan9"
   },
