@@ -1095,36 +1095,4 @@
     "whatsapp": "https://wa.me/966596163816",
     "maps_url": "https://maps.app.goo.gl/xJZLJfhQCryjRhfF9"
   },
-  {
-    "branch": "الادارة العامة",
-    "address": "الرياض/السلي",
-    "lat": 24.6489658829786,
-    "lon": 46.8309685496832,
-    "whatsapp": "https://wa.me/966920032101",
-    "maps_url": "https://maps.app.goo.gl/GsTcfy9uERhhEUL26"
-  },
-  {
-    "branch": "الادارة الفرعية",
-    "address": "الطائف/طريق المطار",
-    "lat": 21.303557,
-    "lon": 40.430281,
-    "whatsapp": "https://wa.me/966920032101",
-    "maps_url": "https://maps.app.goo.gl/x6CCYE1msSZvcYG5A"
-  },
-  {
-    "branch": "المستودع",
-    "address": "الرياض/السلي",
-    "lat": 24.6487995090754,
-    "lon": 46.8299860759347,
-    "whatsapp": "https://wa.me/966920032101",
-    "maps_url": "https://maps.app.goo.gl/XpknGuvoiuSdM7UA8"
-  },
-  {
-    "branch": "المستودع",
-    "address": "جدة/حراج الصواريخ",
-    "lat": 21.4131510811414,
-    "lon": 39.2013312573803,
-    "whatsapp": "https://wa.me/966920032101",
-    "maps_url": "https://maps.app.goo.gl/L6JiD2srA8mc43X47"
-  }
 ]
